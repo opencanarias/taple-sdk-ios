@@ -7,7 +7,6 @@
 
 import Foundation
 
-let DB_NAME = "Taple"
 let DB_VERSION = 1
 let TABLE_NAME = "Taple"
 let ID_COL = "Key"

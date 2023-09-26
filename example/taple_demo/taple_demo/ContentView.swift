@@ -16,21 +16,20 @@ class NotificationHandler: taple_sdk.NotificationHandlerInterface {
 }
 
 struct ContentView: View {
-    @State private var Start = true
-    @State private var Subject = true
-    @State private var Event = true
+    @State private var enableStart = true
     @State private var showStart = false
+    @State private var enableSubject = false
     @State private var showSubject = false
+    @State private var enableEvent = false
     @State private var showEvent = false
     
-    @State private var governanceID: String?
-    @State private var schemaID: String?
+    @State private var isLoading = false
     
     @State private var api: taple_sdk.TapleApi? = nil
     @State private var builder: taple_sdk.SubjectBuilder? = nil
     @State private var my_subject: taple_sdk.UserSubject? = nil
     
-    fileprivate func customButton(name: String, task: @escaping () -> Void) -> some View {
+    fileprivate func customButton(name: String, enable: Bool, task: @escaping () -> Void) -> some View {
         Button(name, action: task)
             .padding(.vertical)
             .frame(width: /*@START_MENU_TOKEN@*/200.0/*@END_MENU_TOKEN@*/, height: /*@START_MENU_TOKEN@*/50.0/*@END_MENU_TOKEN@*/)
@@ -38,27 +37,20 @@ struct ContentView: View {
             .buttonBorderShape(/*@START_MENU_TOKEN@*//*@PLACEHOLDER=shape: ButtonBorderShape@*/.capsule/*@END_MENU_TOKEN@*/)
             .accentColor(/*@START_MENU_TOKEN@*/.black/*@END_MENU_TOKEN@*/)
             .cornerRadius(/*@START_MENU_TOKEN@*/20.0/*@END_MENU_TOKEN@*/)
+            .disabled(!enable)
     }
     
-//    fileprivate func customTextField(name: String, @Binding placeHolder: String) -> some View {
-//        TextField(name, text: $placeHolder)
-//            .padding(.vertical)
-//            .frame(width: 300, height: /*@START_MENU_TOKEN@*/50.0/*@END_MENU_TOKEN@*/)
-//            .accentColor(/*@START_MENU_TOKEN@*/.black/*@END_MENU_TOKEN@*/)
-//            .cornerRadius(/*@START_MENU_TOKEN@*/20.0/*@END_MENU_TOKEN@*/)
-//            .textFieldStyle(.roundedBorder)
-//    }
-    
     func tapleInit(){
+        isLoading = true
         debugPrint("Initializing Taple ...");
         
-        let db_manager = taple_sdk.SQLManager()!
+        let db_manager = taple_sdk.SQLManager(table_name: "taple ")!
         let keyDerivator = taple_sdk.TapleKeyDerivator.ed25519
         let settings = taple_sdk.TapleSettings(
             listenAddr: ["/ip4/0.0.0.0/tcp/50000"],
             keyDerivator: keyDerivator,
             privateKey:[132, 132, 108, 146, 86, 21, 162, 145, 116, 64, 183, 193, 63, 18, 93, 214, 162, 25, 149,139, 224, 135, 149, 208, 183, 173, 254, 61, 181, 198, 197, 51],
-            knownNodes: ["/ip4/\(node_ip)/tcp/\(node_port)/p2p/\(node_p2p)"])
+            knownNodes: remote_knows_nodes_multi_addr)
         
         let node = try! taple_sdk.start(manager: db_manager, settings: settings );
         
@@ -67,7 +59,7 @@ struct ContentView: View {
         debugPrint("Adding BoostrapNode and governace ID")
         api = node.getApi()
         builder = node.getSubjectBuilder()
-        try! api!.addPreauthorizeSubject(subjectId:governance_id, providers: boostrap_nodes)
+        try! api!.addPreauthorizeSubject(subjectId:governance_id, providers: remote_nodes)
         
         debugPrint("BoostrapNode added")
         
@@ -79,33 +71,34 @@ struct ContentView: View {
         Task{
             debugPrint("Retrieving governance")
             var tries = 10
-            while(Start){
+            while(enableStart){
                 if ( tries > 0) {
                     debugPrint("Governance try number: \(tries)")
                     tries = tries - 1
                     let governance = try! api!.getGovernances(namespace: "", from: nil, quantity: nil)
                     if(governance.count > 0){
-                        governanceID = governance[0].getSubjectId()
-                        schemaID = governance[0].getSchemaId()
-                        Start = false
+                        enableStart = false
                         showStart = true
+                        enableSubject = true
                         break
                     }
-                    try await Task.sleep(nanoseconds: 3000000000)
+                    try await Task.sleep(for: .seconds(2))
                 } else {
                     debugPrint("Governance retrieving failed")
                     break
                 }
             }
+            isLoading = false
         }
     }
     
     func createSubject(){
+        isLoading = true
         Task{
             do{
                 try builder!.withName(name: "IOS_Subject")
                 try builder!.withNamespace(namespace: "")
-                let new_subject = try builder!.build(governanceId: governanceID!, schemaId: schema_id)
+                let new_subject = try builder!.build(governanceId: governance_id, schemaId: schema_id)
                 
                 while(new_subject.getSubjectId() == Optional.none){
                     try new_subject.refresh()
@@ -116,6 +109,8 @@ struct ContentView: View {
                 
                 debugPrint("Creating subject: \(String(describing: my_subject?.getSubjectId()))")
                 showSubject = true
+                enableEvent = true
+                isLoading = false
             }
             catch {
                 debugPrint("Error creating subject: \(error)")
@@ -124,18 +119,19 @@ struct ContentView: View {
     }
     
     func createEvent(){
+        isLoading = true
         Task {
             if(my_subject != nil){
                 do {
                     let fact = "{\"ModTwo\":{\"data\":1000}}"
                     let event_id = try my_subject!.newFactEvent(payload: fact)
-                    
                     debugPrint("Creating event with ID: \(event_id)")
                     showEvent = true
                 }catch {
                     debugPrint("Error creating event: \(error)")
                 }
             }
+            isLoading = false
         }
     }
     
@@ -146,10 +142,8 @@ struct ContentView: View {
                 .frame(width: 100, height: 100, alignment: .bottom)
                 .padding()
 
-            customButton(name:"Start Taple", task: {
-                if (Start){
-                    tapleInit()
-                }
+            customButton(name:"Start Taple",enable: enableStart, task: {
+                tapleInit()
             })
             .alert(isPresented: $showStart, content:{
                 Alert(
@@ -159,10 +153,8 @@ struct ContentView: View {
                 )
             })
             
-            customButton(name: "New subject" ,task: {
-                if(Subject){
-                    createSubject()
-                }
+            customButton(name: "New subject", enable: enableSubject ,task: {
+                createSubject()
             })
             .alert(isPresented: $showSubject, content:{
                 Alert(
@@ -172,10 +164,8 @@ struct ContentView: View {
                 )
             })
             
-            customButton(name: "New Event", task: {
-                if(Event){
-                    createEvent()
-                }
+            customButton(name: "New Event",enable: enableEvent, task: {
+                createEvent()
             })
             .alert(isPresented: $showEvent, content:{
                 Alert(
@@ -185,6 +175,13 @@ struct ContentView: View {
                 )
             })
             
+            if isLoading {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .orange))
+                    .frame(width: 50, height: 50)
+                    .background(Color.white.opacity(0.8))
+                    .cornerRadius(15)
+            }
         }
         .padding()
     }
