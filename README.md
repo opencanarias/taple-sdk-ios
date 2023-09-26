@@ -2,7 +2,7 @@
 <img src="https://raw.githubusercontent.com/opencanarias/public-resources/master/images/taple-logo-readme.png">
 </div>
 
-# TAPLE Sdk Ios
+# TAPLE Sdk iOS
 
 TAPLE (pronounced T+🍎 ['tapəl]) stands for Tracking (Autonomous) of Provenance and Lifecycle Events. TAPLE is a permissioned DLT solution for traceability of assets and processes. It is:
 
@@ -13,8 +13,8 @@ TAPLE (pronounced T+🍎 ['tapəl]) stands for Tracking (Autonomous) of Provenan
 
 This repository includes:
 
-- Scripts for compiling TAPLE FFI for Ios 64-bit architectures.
-- Swift library for using TAPLE FFI on Ios. Includes an implementation of the TAPLE database interface using the Ios SQLite libraries.
+- Scripts for compiling TAPLE FFI for iOS 64-bit architectures.
+- Swift library for using TAPLE FFI on iOS. Includes an implementation of the TAPLE database interface using the iOS SQLite libraries.
 - Examples of use of the library
 
 [![AGPL licensed][agpl-badge]][agpl-url]
@@ -32,14 +32,14 @@ Building the library is optional. The library is distributed through [Github rel
 TODO: IOS
 
 ### Download
-Clone TAPLE FFI and TAPLE SDK Ios. 
+Clone TAPLE FFI and TAPLE SDK iOS. 
 ```bash
 git clone https://github.com/opencanarias/taple-ffi
 git clone https://github.com/opencanarias/taple-sdk-ios
 ```
 
 ## Use
-Explore the [examples](./examples/) folder to learn how to use TAPLE in your Ios applications.
+Explore the [examples](./examples/) folder to learn how to use TAPLE in your iOS applications.
 
 ## Current limitations
 Mobile devices do not usually have a public IP address, which prevents another TAPLE node from making a direct P2P connection with them. This means that currently only use cases where the mobile device initiates the connection with other TAPLE nodes can be addressed. 
