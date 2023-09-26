@@ -1,7 +1,5 @@
 #!/bin/bash
 
-rustup target list --installed | grep ios
-
 rustup toolchain install nightly
 rustup target add aarch64-apple-ios-sim --toolchain nightly
 rustup component add rust-src --toolchain nightly-aarch64-apple-darwin
