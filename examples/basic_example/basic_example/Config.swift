@@ -1,6 +1,6 @@
 //
 //  taple_config.swift
-//  taple_demo
+//  basic_example
 //
 //  Created by Pmolmar on 12/9/23.
 //

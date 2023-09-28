@@ -20,7 +20,7 @@ public class SQLManager: taple_sdk.DatabaseManagerInterface {
         if sqlite3_open_v2(dataBaseUrl.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK {
             myDb = db
             myCollection = SQLCollection(db: db!)
-            dropTable()
+            // dropTable()
             createTable()
         } else {
             

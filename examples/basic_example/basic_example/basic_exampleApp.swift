@@ -1,6 +1,6 @@
 //
-//  taple_demoApp.swift
-//  taple_demo
+//  basic_exampleApp.swift
+//  basic_example
 //
 //  Created by Pmolmar on 12/9/23.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct taple_demoApp: App {
+struct basic_exampleApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

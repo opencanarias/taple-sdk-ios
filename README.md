@@ -25,11 +25,11 @@ This repository includes:
 [Discover](https://www.taple.es/docs/discover) | [Learn](https://www.taple.es/docs/learn) | [Build](https://www.taple.es/docs/build) | [Code](https://github.com/search?q=topic%3Ataple+org%3Aopencanarias++fork%3Afalse+archived%3Afalse++is%3Apublic&type=repositories)
 
 ## Build
-
 Building the library is optional. The library is distributed through [Github releases](https://github.com/opencanarias/taple-sdk-ios/releases).
 
 ### Requirements
-TODO: IOS
+- Rust. Minimun supported vesrion (MSRV) is 1.67
+- Xcode
 
 ### Download
 Clone TAPLE FFI and TAPLE SDK iOS. 
@@ -37,6 +37,17 @@ Clone TAPLE FFI and TAPLE SDK iOS.
 git clone https://github.com/opencanarias/taple-ffi
 git clone https://github.com/opencanarias/taple-sdk-ios
 ```
+
+### Compilation
+With Xcode and lipo we can generate a Framework for working with the Taple FFI in the IOS/MacOs ecosystem. Check the [FFI repository](https://github.com/opencanarias/taple-ffi) in case you need to install additional dependencies. 
+
+```bash
+cd taple-sdk-ios/scripts
+./setup.sh
+./start.sh
+```
+
+The resulting artifacts are automatically copied to their corresponding location in the sdk folder.
 
 ## Use
 Explore the [examples](./examples/) folder to learn how to use TAPLE in your iOS applications.

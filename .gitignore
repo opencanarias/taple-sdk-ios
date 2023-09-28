@@ -1,3 +1,4 @@
 ._*
-.swiftpm
-taple_sdk/Sources/tapleFFI.xcframework
+*.swiftpm
+sdk/Sources/tapleFFI.xcframework
+*.zip

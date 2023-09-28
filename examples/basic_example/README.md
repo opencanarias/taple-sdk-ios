@@ -149,14 +149,11 @@ curl --location 'http://localhost:3000/api/approval-requests/[HERE GOES YOUR APP
 If we execute again the `curl --location 'http://localhost:3000/api/subjects'` we should be able to see that our *Governance* is now updated and with the configuration that we specified before.
 
 ## Mobile Demo
-TODO: Refactor
-First, we need the `TapleSDK` *.aar* to our mobile project. We can achieve this by downloading it from the releases or building it ourselves, as shown in the main `README.md` of the project. Once we have this, we should put it inside the `libs` folder. Depending on whether you compile the library or download it, you may need to adjust its name in the `build.gradle.kts` file.
+First, we need the `taple_sdk` to be compiled locally, or we can use the default .zip file in the release section to have the binaries (in this case, we don't have to do anything). Once we get the binaries, we can proceed to open Xcode and select the basic_example folder.
 
-We need to configure the app for the current *Bootstrap Node* and Governance configuration. To do this, we will modify the `Config.kt` that is in this project.
+We need to configure the app for the current *Bootstrap Node* and Governance configuration. To do this, we will modify the `Config.swift` that is in this project.
 
-Once we configure it, we can compile the app running the Gradle script called `gradlew assembleRelease`. This script will generate an APK inside `app/build/outputs/apk/release`. We need to install this APK in an emulator or on a physical device.
-
-When we have the app installed, we can launch it and follow the next steps to verify Taple:
+Once we configure it, we can compile the app and run it in Xcode. Once it is launched, we should follow the next steps to verify Taple:
 
 1. Start the taple node and, very importantly, wait a couple of seconds to update the Governance in the mobile
 2. Once we got the updated Governance we can create a subject and check it in the *Bootstrap Node* with the `getGovernances` petition previously used

@@ -1,19 +1,12 @@
 //
 //  ContentView.swift
-//  taple_demo
+//  basic_example
 //
 //  Created by Pmolmar on 12/9/23.
 //
 
 import SwiftUI
 import taple_sdk
-
-class NotificationHandler: taple_sdk.NotificationHandlerInterface {
-    
-    func processNotification(notification: taple_sdk.TapleNotification) {
-        debugPrint("New Notification: \(notification)")
-    }
-}
 
 struct ContentView: View {
     @State private var enableStart = true
@@ -25,6 +18,7 @@ struct ContentView: View {
     
     @State private var isLoading = false
     
+    @State private var node: taple_sdk.TapleNode? = nil
     @State private var api: taple_sdk.TapleApi? = nil
     @State private var builder: taple_sdk.SubjectBuilder? = nil
     @State private var my_subject: taple_sdk.UserSubject? = nil
@@ -42,6 +36,7 @@ struct ContentView: View {
     
     func tapleInit(){
         isLoading = true
+        enableStart = false
         debugPrint("Initializing Taple ...");
         
         let db_manager = taple_sdk.SQLManager(table_name: "taple ")!
@@ -52,85 +47,146 @@ struct ContentView: View {
             privateKey:[132, 132, 108, 146, 86, 21, 162, 145, 116, 64, 183, 193, 63, 18, 93, 214, 162, 25, 149,139, 224, 135, 149, 208, 183, 173, 254, 61, 181, 198, 197, 51],
             knownNodes: remote_knows_nodes_multi_addr)
         
-        let node = try! taple_sdk.start(manager: db_manager, settings: settings );
+        node = try! taple_sdk.start(manager: db_manager, settings: settings );
         
         debugPrint("Taple node Initialized !")
         
         debugPrint("Adding BoostrapNode and governace ID")
-        api = node.getApi()
-        builder = node.getSubjectBuilder()
+        api = node!.getApi()
+        builder = node!.getSubjectBuilder()
         try! api!.addPreauthorizeSubject(subjectId:governance_id, providers: remote_nodes)
         
         debugPrint("BoostrapNode added")
         
-        Task {
-            let notifications = NotificationHandler()
-            try! node.handleNotifications(handler: notifications)
-        }
-        
         Task{
             debugPrint("Retrieving governance")
+            
             var tries = 10
-            while(enableStart){
-                if ( tries > 0) {
-                    debugPrint("Governance try number: \(tries)")
+            while(isLoading && tries > 0){
+                debugPrint("Governance try number: \(tries)")
+                let notification = try node!.receiveBlocking()
+                
+                switch(notification){
+                case .newSubject:
+                    isLoading = false
+                default:
                     tries = tries - 1
-                    let governance = try! api!.getGovernances(namespace: "", from: nil, quantity: nil)
-                    if(governance.count > 0){
-                        enableStart = false
-                        showStart = true
-                        enableSubject = true
-                        break
-                    }
                     try await Task.sleep(for: .seconds(2))
-                } else {
-                    debugPrint("Governance retrieving failed")
-                    break
                 }
             }
-            isLoading = false
+            
+            if(tries == 0){
+                debugPrint("Governance couldnt be retrieved")
+                isLoading = false
+                enableStart = true
+            } else {
+                isLoading = true
+                tries = 10
+
+                while(isLoading && tries > 0){
+                    let notification = try node!.receiveBlocking()
+                    
+                    switch(notification){
+                    case .newEvent(let sn, _):
+                        if (sn == 1) {
+                            isLoading = false
+                            showStart = true
+                            enableSubject = true
+                        }
+                        
+                    default:
+                        tries = tries - 1
+                        try await Task.sleep(for: .seconds(5))
+                    }
+                }
+                
+                if(tries == 0){
+                    debugPrint("Governance couldnt be updated")
+                    isLoading = false
+                    enableStart = true
+                }
+            }
         }
     }
     
     func createSubject(){
         isLoading = true
+        enableSubject = false
         Task{
             do{
                 try builder!.withName(name: "IOS_Subject")
                 try builder!.withNamespace(namespace: "")
                 let new_subject = try builder!.build(governanceId: governance_id, schemaId: schema_id)
                 
-                while(new_subject.getSubjectId() == Optional.none){
-                    try new_subject.refresh()
-                    try await Task.sleep(for: .seconds(3))
+                
+                var tries = 10
+                while(tries > 0 && isLoading){
+                    debugPrint("Subject try number: \(tries)")
+
+                    let notification = try node!.receiveBlocking()
+                    
+                    switch(notification){
+                    case .newSubject(let sid):
+//                        if (sid == new_subject.getSubjectId()) {
+                            try new_subject.refresh()
+                            my_subject = new_subject
+                            showSubject = true
+                            enableEvent = true
+                            isLoading = false
+//                        } else {
+//                            tries = tries - 1
+//                            try await Task.sleep(for: .seconds(3))
+//                        }
+                        
+                    default:
+                        tries = tries - 1
+                        try await Task.sleep(for: .seconds(3))
+                    }
                 }
-                
-                my_subject = new_subject
-                
-                debugPrint("Creating subject: \(String(describing: my_subject?.getSubjectId()))")
-                showSubject = true
-                enableEvent = true
-                isLoading = false
             }
             catch {
                 debugPrint("Error creating subject: \(error)")
             }
+            isLoading = false
+            enableSubject = true
         }
     }
     
     func createEvent(){
         isLoading = true
+        enableEvent = false
         Task {
             if(my_subject != nil){
                 do {
                     let fact = "{\"ModTwo\":{\"data\":1000}}"
-                    let event_id = try my_subject!.newFactEvent(payload: fact)
-                    debugPrint("Creating event with ID: \(event_id)")
-                    showEvent = true
+                    let request_event_id = try my_subject!.newFactEvent(payload: fact)
+                    debugPrint("Creating event with ID: \(request_event_id)")
+                    
+                    while(isLoading){
+                        let notification = try node!.receiveBlocking()
+                        
+                        switch(notification){
+                        case .newEvent:
+                            switch (try api?.getRequest(requestId: request_event_id).state){
+                            case .finished:
+                                try my_subject?.refresh()
+                                showEvent = true
+                                isLoading = false
+                            case .error:
+                                debugPrint("Event created with error")
+                                isLoading = false
+                            default:
+                                try await Task.sleep(for: .seconds(1))
+                            }
+                        default:
+                            try await Task.sleep(for: .seconds(3))
+                        }
+                    }
                 }catch {
                     debugPrint("Error creating event: \(error)")
                 }
             }
+            enableEvent = true
             isLoading = false
         }
     }
@@ -141,7 +197,7 @@ struct ContentView: View {
                 .resizable()
                 .frame(width: 100, height: 100, alignment: .bottom)
                 .padding()
-
+            
             customButton(name:"Start Taple",enable: enableStart, task: {
                 tapleInit()
             })
