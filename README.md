@@ -38,7 +38,7 @@ git clone https://github.com/opencanarias/taple-ffi
 git clone https://github.com/opencanarias/taple-sdk-ios
 ```
 
-### Compilation
+### Compilation
 With Xcode and lipo we can generate a Framework for working with the Taple FFI in the IOS/MacOs ecosystem. Check the [FFI repository](https://github.com/opencanarias/taple-ffi) in case you need to install additional dependencies. 
 
 ```bash
