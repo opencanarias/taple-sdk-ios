@@ -22,7 +22,11 @@ let package = Package(
             name: "taple_sdk",
             dependencies: ["tapleFFI"]
         ),
-        .binaryTarget(name: "tapleFFI", path: "Sources/tapleFFI.xcframework"),
+        // .binaryTarget(name: "tapleFFI", path: "Sources/tapleFFI.xcframework"),
+        .binaryTarget(
+            name: "tapleFFI",
+            url: "https://github.com/opencanarias/taple-sdk-ios/releases/download/v0.3.0/tapleFFI-0.3.0.zip",
+            checksum: "0adb12d57bee9412001a71e012abc0fd0d6e5fe94cea7f97d7ae57785ae42a7a"),
         .testTarget(
             name: "taple_sdkTests",
             dependencies: ["taple_sdk"]
